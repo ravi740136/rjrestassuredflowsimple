@@ -14,10 +14,12 @@ import rj.restassured.flow.entity.Employee;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
-public class EmployeeTest {
+
+public class EmployeePostTest {
 	
 	private static final String BASE_URL = "http://localhost:8080/rjrestassuredflowsimple"; // Update with your actual base URL
     private static final String BASE_PATH = "/employees"; 
+    
     @BeforeClass
     public void setup() {
     	//RestAssured.defaultParser = io.restassured.parsing.Parser.JSON;
@@ -27,16 +29,16 @@ public class EmployeeTest {
                 new RequestLoggingFilter(), 
                 new ResponseLoggingFilter()
         );
-
     }
 
     // Test case for POST request to register an employee with city
-    @Test
+    @Test(priority = -2)
     public void testRegisterEmployee() {
         String requestBody = "{\n" +
                 "  \"firstName\": \"John\",\n" +
                 "  \"lastName\": \"Doe\",\n" +
-                "  \"city\": \"New York\"\n" +  // Added city field
+                "  \"city\": \"New York\",\n" +  // Added city field
+                "  \"department\": \"IT\"\n" + 
                 "}";
 
         given()
@@ -48,16 +50,41 @@ public class EmployeeTest {
             .statusCode(201)
             .body("firstName", equalTo("John"))
             .body("lastName", equalTo("Doe"))
-            .body("city", equalTo("New York"));  // Assert the city value
+            .body("city", equalTo("New York")) // Assert the city value
+            .body("department", equalTo("IT"));
     }
     
-    @Test
+    // Test case for POST request to register an employee with city
+    @Test(priority = -2)
+    public void testRegisterEmployeeAdmin() {
+        String requestBody = "{\n" +
+                "  \"firstName\": \"admin\",\n" +
+                "  \"lastName\": \"admin\",\n" +
+                "  \"city\": \"New York\",\n" +  // Added city field
+                "  \"department\": \"IT\"\n" + 
+                "}";
+
+        given()
+            .contentType("application/json")
+            .body(requestBody)
+        .when()
+            .post("/register")
+        .then()
+            .statusCode(201)
+            .body("firstName", equalTo("admin"))
+            .body("lastName", equalTo("admin"))
+            .body("city", equalTo("New York")) // Assert the city value
+            .body("department", equalTo("IT"));
+    }
+    
+    @Test(priority = -1)
     public void testCreateEmployeeAndVerifyLocation() {
         // Create Employee object
         Employee employee = new Employee();
         employee.setFirstName("Chris");
         employee.setLastName("Smith");
         employee.setCity("Star City");
+        employee.setDepartment("IT");
 
         // Send POST request
        // Response response = given()
@@ -84,36 +111,21 @@ public class EmployeeTest {
                 .statusCode(200)  // Expect HTTP 200 OK
                 .body("firstName", equalTo("Chris"))
                 .body("lastName", equalTo("Smith"))
-                .body("city", equalTo("Star City"));
+                .body("city", equalTo("Star City"))
+                .body("department", equalTo("IT"));
     }
-
-    // Test case for GET request to fetch an employee by ID
+      
     @Test
-    public void testGetEmployeeById() {
+    public void testSearchEmployees() {
         given()
-    //    .header("Cache-Control", "no-cache, no-store, must-revalidate")
-            .pathParam("id", 1)
+            .contentType("application/x-www-form-urlencoded")
+            .formParam("department", "IT")
+            .formParam("city", "New York")
         .when()
-            .get("/{id}")
+            .post("/search")
         .then()
-      //  .contentType(ContentType.JSON)
             .statusCode(200)
-            .body("firstName", equalTo("John"))
-            .body("lastName", equalTo("Doe"))
-            .body("city", equalTo("New York"));  // Assert the city value
-    }
-    
-    @Test
-    public void testGetEmployeeByIdValidatetestng() {
-     Response r =   given()
-    //    .header("Cache-Control", "no-cache, no-store, must-revalidate")
-            .pathParam("id", 1)
-        .when()
-            .get("/{id}");
-   
-  
-    Assert.assertEquals(r.statusCode(), 200);
-    Assert.assertEquals(r.jsonPath().getString("firstName"), "John");
-  
+            .body("[0].department", equalTo("IT"))
+            .body("[0].city", equalTo("New York"));
     }
 }

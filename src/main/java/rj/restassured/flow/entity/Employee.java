@@ -1,5 +1,7 @@
 package rj.restassured.flow.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -9,8 +11,20 @@ public class Employee {
     private Long id;
     private String firstName;
     private String lastName;
+   
+    @JsonIgnore
     private String sessionId;
+    
     private String city;  // New city field added
+    public String getDepartment() {
+		return department;
+	}
+
+	public void setDepartment(String department) {
+		this.department = department;
+	}
+
+	private String department; 
 
     // Getters and Setters
     public Long getId() {
