@@ -1,6 +1,7 @@
 package rj.restassured.flow.test;
 
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -81,8 +82,8 @@ public class EmployeePostTest {
     public void testCreateEmployeeAndVerifyLocation() {
         // Create Employee object
         Employee employee = new Employee();
-        employee.setFirstName("Chris");
-        employee.setLastName("Smith");
+        employee.setFirstName("Chrisloc");
+        employee.setLastName("Smithloc");
         employee.setCity("Star City");
         employee.setDepartment("IT");
 
@@ -109,8 +110,8 @@ public class EmployeePostTest {
                 .get(location)
                 .then()
                 .statusCode(200)  // Expect HTTP 200 OK
-                .body("firstName", equalTo("Chris"))
-                .body("lastName", equalTo("Smith"))
+                .body("firstName", equalTo("Chrisloc"))
+                .body("lastName", equalTo("Smithloc"))
                 .body("city", equalTo("Star City"))
                 .body("department", equalTo("IT"));
     }
@@ -127,5 +128,85 @@ public class EmployeePostTest {
             .statusCode(200)
             .body("[0].department", equalTo("IT"))
             .body("[0].city", equalTo("New York"));
+    }
+    
+
+    @Test
+    public void testDuplicateEmployeeException() {
+        // Creating request body with duplicate employee details
+        String duplicateEmployeeJson = "{\n" +
+                "    \"firstName\": \"John\",\n" +
+                "    \"lastName\": \"Doe\",\n" +
+                "    \"city\": \"San Francisco\",\n" +
+                "    \"department\": \"IT\"\n" +
+                "}";
+
+        // Test case for DuplicateEmployeeException (HTTP 409)
+        given()
+            .contentType(ContentType.JSON)
+            .body(duplicateEmployeeJson)
+        .when()
+            .post("/register")  // Adjust the endpoint as per your application
+        .then()
+            .statusCode(409)  // Checking for Conflict (409)
+            .body("status", equalTo(409))
+            .body("error", equalTo("Conflict"))
+            .body("message", containsString("Employee with the same first and last name already exists."));
+    }
+
+    @Test
+    public void testInvalidEmployeeDataException() {
+        // Creating request body with invalid employee data
+        String invalidEmployeeJson = "{\n" +
+                "    \"firstName\": \"\",\n" +  // Invalid first name
+                "    \"lastName\": \"Doe\",\n" +
+                "    \"city\": \"San Francisco\",\n" +
+                "    \"department\": \"IT\"\n" +
+                "}";
+
+        // Test case for InvalidEmployeeDataException (HTTP 400)
+        given()
+            .contentType(ContentType.JSON)
+            .body(invalidEmployeeJson)
+        .when()
+            .post("/register")  // Adjust the endpoint as per your application
+        .then()
+            .statusCode(400)  // Checking for Bad Request (400)
+            .body("status", equalTo(400))
+            .body("error", equalTo("Bad Request"))
+            .body("message", containsString("First name cannot be empty"));
+    }
+
+    @Test
+    public void testInternalServerErrorWhenDepartmentIsNull() {
+        // Creating request body with department set to null
+        String invalidEmployeeJson = "{\n" +
+                "    \"firstName\": \"unknown\",\n" +
+                "    \"lastName\": \"unknown\",\n" +
+                "    \"city\": \"San Francisco\",\n" +
+                "    \"department\": null\n" +  // Simulating missing department
+                "}";
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(invalidEmployeeJson)
+        .when()
+            .post("/register")  // Adjust endpoint as per your API
+        .then()
+            .statusCode(500)  // Expecting Internal Server Error
+            .body("status", equalTo(500))
+            .body("error", equalTo("Internal Server Error"))
+           // .body("message", equalTo("An unexpected error occurred")) // Match exception handler message
+            .body("timestamp", notNullValue()); // Ensure timestamp is present
+    }
+    
+    @AfterClass
+    public void cleanupDatabase() {
+        given()
+            .contentType(ContentType.JSON)
+        .when()
+            .delete()  // Make sure this endpoint exists in your API
+        .then()
+            .statusCode(200);  // Assuming delete is successful
     }
 }

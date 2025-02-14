@@ -84,14 +84,14 @@ public class EmployeeController {
         }
         
         @GetMapping("/search/name")
-        public ResponseEntity<List<Employee>> getEmployeesByName(
+        public ResponseEntity<Employee> getEmployeeByName(
                 @RequestParam String firstName,
                 @RequestParam String lastName) {
-            List<Employee> employees = employeeService.getEmployeesByFirstAndLastName(firstName, lastName);
-            if (employees.isEmpty()) {
+            Employee employee = employeeService.getEmployeeByFirstAndLastName(firstName, lastName);
+            if (employee == null) {
                 return ResponseEntity.noContent().build();
             }
-            return ResponseEntity.ok(employees);
+            return ResponseEntity.ok(employee);
         }
         
         @GetMapping
@@ -102,8 +102,8 @@ public class EmployeeController {
             }
             return ResponseEntity.ok(employees); // 200 OK with employee list
         }
-        @PutMapping("/{id}")
         
+        @PutMapping("/{id}")        
         public ResponseEntity<String> updateEmployee(
                 @PathVariable Long id,
                 @RequestBody Employee updatedEmployee,
@@ -114,13 +114,13 @@ public class EmployeeController {
             }
 
             // Fetch admin employees and validate session ID
-            List<Employee> adminEmployees = employeeService.getEmployeesByFirstAndLastName("admin", "admin");
+         Employee adminEmployee = employeeService.getEmployeeByFirstAndLastName("admin", "admin");
 
-            if (adminEmployees.isEmpty()) {
+            if (adminEmployee == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin account not found"); // 403 Forbidden
             }
 
-            boolean isValidAdmin = adminEmployees.stream().anyMatch(emp -> sessionId.equals(emp.getSessionId()));
+            boolean isValidAdmin = sessionId.equals(adminEmployee.getSessionId());
 
             if (!isValidAdmin) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid session ID or not an admin"); // 403 Forbidden
@@ -139,7 +139,6 @@ public class EmployeeController {
             existingEmployee.setCity(updatedEmployee.getCity());
 
             employeeService.updateEmployee(existingEmployee); // Save changes
-
             return ResponseEntity.ok("Employee updated successfully");
         }
 
@@ -153,13 +152,13 @@ public class EmployeeController {
             }
 
             // Fetch admin employees and validate session ID
-            List<Employee> adminEmployees = employeeService.getEmployeesByFirstAndLastName("admin", "admin");
+            Employee adminEmployee = employeeService.getEmployeeByFirstAndLastName("admin", "admin");
 
-            if (adminEmployees.isEmpty()) {
+            if (adminEmployee == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin account not found"); // 403 Forbidden
             }
 
-            boolean isValidAdmin = adminEmployees.stream().anyMatch(emp -> sessionId.equals(emp.getSessionId()));
+            boolean isValidAdmin = sessionId.equals(adminEmployee.getSessionId());
 
             if (!isValidAdmin) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid session ID or not an admin"); // 403 Forbidden
@@ -177,5 +176,11 @@ public class EmployeeController {
             return ResponseEntity.ok("Employee deleted successfully");
         }
 
+        @DeleteMapping
+        public ResponseEntity<String> deleteAllEmployees() {
+            // Delete all employees
+            employeeService.deleteAllEmployees();
+            return ResponseEntity.ok("All employees deleted successfully");
+        }
 
 }

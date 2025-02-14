@@ -57,4 +57,16 @@ public class EmployeeDeleteTest extends UpdateSetup{
         .statusCode(404) 
         .body(equalTo("Employee not found"));
     }
+    
+    @Test(priority = 4, dependsOnMethods = "loginAndGetSession")
+    public void deleteEmployeeWithoutSession() {
+       // RestAssured.requestSpecification = RestAssured.given()
+        //        .accept(ContentType.TEXT);
+        given()
+            //.cookie("SESSIONID", sessionId) // Set session ID
+        .when()
+            .delete("/" + employeeId)
+        .then()
+        .statusCode(401);
+    }
 }

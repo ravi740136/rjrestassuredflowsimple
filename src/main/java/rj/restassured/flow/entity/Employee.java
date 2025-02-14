@@ -23,7 +23,8 @@ public class Employee {
 	public void setDepartment(String department) {
 		this.department = department;
 	}
-
+	 
+	@Column(nullable = false)
 	private String department; 
 
     // Getters and Setters

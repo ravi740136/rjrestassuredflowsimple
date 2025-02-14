@@ -9,7 +9,7 @@ import rj.restassured.flow.entity.Employee;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
-	 Optional<List<Employee>> findByFirstNameAndLastName(String firstName, String lastName);
+	 Optional<Employee> findByFirstNameAndLastName(String firstName, String lastName);
 	    List<Employee> findByDepartmentAndCity(String department, String city);
 	    List<Employee> findAll();	
 }
