@@ -22,6 +22,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletResponse;
 import rj.restassured.flow.entity.Employee;
+import rj.restassured.flow.exceptions.InvalidEmployeeDataException;
 import rj.restassured.flow.service.EmployeeService;
 
 @RestController
@@ -35,8 +36,7 @@ public class EmployeeController {
     public ResponseEntity<String> login(@RequestBody Map<String, String> employee, HttpServletResponse response) {
     	return employeeService.authenticateEmployee(employee.get("firstName"), employee.get("lastName"), response);
     }
-    
-    
+      
     // Endpoint to register an employee
     @PostMapping("/register")
  //   @ResponseStatus(HttpStatus.CREATED)
@@ -57,26 +57,37 @@ public class EmployeeController {
     	    return ResponseEntity.created(location).body(savedEmployee);
     }
 
-    // Endpoint to get an employee by ID
-    @GetMapping(value= "/{id}")
-    		//produces = MediaType.APPLICATION_JSON_VALUE) 
-    public ResponseEntity<Employee> getEmployeeById(@PathVariable Long id) {
-       
-    	 Employee employee = employeeService.getEmployeeById(id);
-    	if (employee == null) {
+    
+    // ✅ GET Employee by ID with improved validation
+    @GetMapping("/{id}")
+    public ResponseEntity<Employee> getEmployeeById(@PathVariable String id) {
+        Long employeeId = validateAndParseId(id);
+
+        Employee employee = employeeService.getEmployeeById(employeeId);
+        if (employee == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // 404 Not Found
         }
-    	
-    	return ResponseEntity.ok().body(employee);
+        return ResponseEntity.ok(employee);
+    }
+
+    // ✅ Utility method to validate and parse ID
+    private Long validateAndParseId(String id) {
+        try {
+            Long parsedId = Long.parseLong(id);
+            if (parsedId <= 0) {
+                throw new IllegalArgumentException("Invalid ID. Must be a positive number.");
+            }
+            return parsedId;
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("ID must be a numeric value.");
+        }
     }
 
         @PostMapping("/search")
         public ResponseEntity<List<Employee>> searchEmployees(
                 @RequestParam String department,
                 @RequestParam String city) {
-
-            List<Employee> employees = employeeService.searchEmployees(department, city);
-            
+            List<Employee> employees = employeeService.searchEmployees(department, city);            
             if (employees.isEmpty()) {
                 return ResponseEntity.noContent().build(); // 204 No Content if no results
             }
@@ -108,20 +119,18 @@ public class EmployeeController {
                 @PathVariable Long id,
                 @RequestBody Employee updatedEmployee,
                 @CookieValue(value = "SESSIONID", required = false) String sessionId) {
-
+            
             if (sessionId == null || sessionId.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session ID is missing"); // 401 Unauthorized
             }
 
             // Fetch admin employees and validate session ID
-         Employee adminEmployee = employeeService.getEmployeeByFirstAndLastName("admin", "admin");
-
+            Employee adminEmployee = employeeService.getEmployeeByFirstAndLastName("admin", "admin");
             if (adminEmployee == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin account not found"); // 403 Forbidden
             }
 
             boolean isValidAdmin = sessionId.equals(adminEmployee.getSessionId());
-
             if (!isValidAdmin) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid session ID or not an admin"); // 403 Forbidden
             }
@@ -132,15 +141,38 @@ public class EmployeeController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee not found"); // 404 Not Found
             }
 
+            System.out.println("updated employee: "+updatedEmployee);
+            // Validate updated data (Check for null fields)
+            if (updatedEmployee.getFirstName() == null || updatedEmployee.getFirstName().isEmpty() ||
+                updatedEmployee.getLastName() == null || updatedEmployee.getLastName().isEmpty() ||
+                updatedEmployee.getCity() == null || updatedEmployee.getCity().isEmpty() ||
+                updatedEmployee.getDepartment() == null || updatedEmployee.getDepartment().isEmpty()) {
+            	 throw new InvalidEmployeeDataException("Invalid input: Fields cannot be empty");
+            }
+
+            // Check if any field is actually updated, else return 304 Not Modified
+            if (existingEmployee.getFirstName().equals(updatedEmployee.getFirstName()) &&
+                existingEmployee.getLastName().equals(updatedEmployee.getLastName()) &&
+                existingEmployee.getCity().equals(updatedEmployee.getCity()) &&
+                existingEmployee.getDepartment().equals(updatedEmployee.getDepartment())) {
+            	return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
+            }
+
             // Update employee details
             existingEmployee.setFirstName(updatedEmployee.getFirstName());
             existingEmployee.setLastName(updatedEmployee.getLastName());
             existingEmployee.setDepartment(updatedEmployee.getDepartment());
             existingEmployee.setCity(updatedEmployee.getCity());
 
-            employeeService.updateEmployee(existingEmployee); // Save changes
-            return ResponseEntity.ok("Employee updated successfully");
+            try {
+                employeeService.updateEmployee(existingEmployee); // Save changes
+            } catch (Exception ex) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected server error occurred"); // 500 Internal Server Error
+            }
+
+            return ResponseEntity.ok("Employee updated successfully"); // 200 OK
         }
+
 
         @DeleteMapping("/{id}")
         public ResponseEntity<String> deleteEmployee(
@@ -172,7 +204,6 @@ public class EmployeeController {
 
             // Delete employee
             employeeService.deleteEmployee(id);
-
             return ResponseEntity.ok("Employee deleted successfully");
         }
 

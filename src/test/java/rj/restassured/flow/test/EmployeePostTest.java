@@ -30,6 +30,11 @@ public class EmployeePostTest {
                 new RequestLoggingFilter(), 
                 new ResponseLoggingFilter()
         );
+        
+        given()
+        .contentType(ContentType.JSON)
+    .when()
+        .delete() ;
     }
 
     // Test case for POST request to register an employee with city
@@ -79,7 +84,7 @@ public class EmployeePostTest {
     }
     
     @Test(priority = -1)
-    public void testCreateEmployeeAndVerifyLocation() {
+    public void testCreateEmployeeUsingObjectAndVerifyLocation() {
         // Create Employee object
         Employee employee = new Employee();
         employee.setFirstName("Chrisloc");
@@ -118,6 +123,22 @@ public class EmployeePostTest {
       
     @Test
     public void testSearchEmployees() {
+    	
+    	String requestBody = "{\n" +
+                "  \"firstName\": \"search_first\",\n" +
+                "  \"lastName\": \"search_last\",\n" +
+                "  \"city\": \"New York\",\n" +  // Added city field
+                "  \"department\": \"IT\"\n" + 
+                "}";
+    	
+    	given()
+        .contentType("application/json")
+        .body(requestBody)
+        .when()
+        .post("/registerloc")
+        .then()
+        .statusCode(201);
+    	
         given()
             .contentType("application/x-www-form-urlencoded")
             .formParam("department", "IT")
@@ -173,8 +194,51 @@ public class EmployeePostTest {
         .then()
             .statusCode(400)  // Checking for Bad Request (400)
             .body("status", equalTo(400))
-            .body("error", equalTo("Bad Request"))
+            .body("error", equalTo("Invalid Employee Data"))
             .body("message", containsString("First name cannot be empty"));
+    }
+    
+    @Test
+    public void testInvalidEmployeeDataExceptionForCity() {
+        // Creating request body with invalid employee data
+        String invalidEmployeeJson = "{\n" +
+                "    \"firstName\": \"unknown\",\n" +  // Invalid first name
+                "    \"lastName\": \"unknown\",\n" +
+               
+                "    \"department\": \"IT\"\n" +
+                "}";
+
+        String invalidEmployeeJson2 = "{\n" +
+                "    \"firstName\": \"unknown\",\n" +  // Invalid first name
+                "    \"lastName\": \"unknown\",\n" +
+                "    \"city\": \"\",\n" +
+                "    \"department\": \"IT\"\n" +
+                "}";
+        
+        given()
+        .contentType(ContentType.JSON)
+        .body(invalidEmployeeJson)
+    .when()
+        .post("/register")  // Adjust the endpoint as per your application
+    .then()
+        .statusCode(400)  // Checking for Bad Request (400)
+        .body("status", equalTo(400))
+        .body("error", equalTo("Invalid Employee Data"))
+        .body("message", containsString("City cannot be empty"));
+
+        
+        
+        // Test case for InvalidEmployeeDataException (HTTP 400)
+        given()
+            .contentType(ContentType.JSON)
+            .body(invalidEmployeeJson2)
+        .when()
+            .post("/register")  // Adjust the endpoint as per your application
+        .then()
+            .statusCode(400)  // Checking for Bad Request (400)
+            .body("status", equalTo(400))
+            .body("error", equalTo("Invalid Employee Data"))
+            .body("message", containsString("City cannot be empty"));
     }
 
     @Test
@@ -200,13 +264,13 @@ public class EmployeePostTest {
             .body("timestamp", notNullValue()); // Ensure timestamp is present
     }
     
-    @AfterClass
+  // @BeforeClass
     public void cleanupDatabase() {
         given()
             .contentType(ContentType.JSON)
         .when()
-            .delete()  // Make sure this endpoint exists in your API
-        .then()
-            .statusCode(200);  // Assuming delete is successful
+            .delete() ; // Make sure this endpoint exists in your API
+        //.then()
+        //    .statusCode(200);  // Assuming delete is successful
     }
 }

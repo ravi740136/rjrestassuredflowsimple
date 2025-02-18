@@ -25,13 +25,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidEmployeeDataException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidEmployeeDataException(InvalidEmployeeDataException ex) {
-        Map<String, Object> errorDetails = new HashMap<>();
-        errorDetails.put("timestamp", Instant.now());
-        errorDetails.put("status", HttpStatus.BAD_REQUEST.value());
-        errorDetails.put("error", "Bad Request");
-        errorDetails.put("message", ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Employee Data", ex.getMessage());
+    }
+    
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid employee id", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
@@ -43,6 +42,16 @@ public class GlobalExceptionHandler {
         errorDetails.put("message", ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDetails);
+    }
+    
+ // Utility method to avoid code duplication
+    private ResponseEntity<Map<String, Object>> buildErrorResponse(HttpStatus status, String error, String message) {
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("timestamp", Instant.now());
+        errorDetails.put("status", status.value());
+        errorDetails.put("error", error);
+        errorDetails.put("message", message);
+        return ResponseEntity.status(status).body(errorDetails);
     }
 }
 

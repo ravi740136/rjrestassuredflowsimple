@@ -35,6 +35,10 @@ public class EmployeeService {
 		if (employee.getLastName() == null || employee.getLastName().trim().isEmpty()) {
 			throw new InvalidEmployeeDataException("Last name cannot be empty");
 		}
+		
+		if (employee.getCity() == null || employee.getCity().trim().isEmpty()) {
+			throw new InvalidEmployeeDataException("City cannot be empty");
+		}
 
 		Optional<Employee> existingEmployee = employeeRepository.findByFirstNameAndLastName(employee.getFirstName(),
 				employee.getLastName());

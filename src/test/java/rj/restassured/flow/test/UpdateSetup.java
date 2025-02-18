@@ -16,7 +16,7 @@ import io.restassured.response.Response;
 public class UpdateSetup {
 	    
 	     String sessionId;
-	    Long employeeId = 1L; // Assuming an existing employee ID
+	    long employeeId = 1L; // Assuming an existing employee ID
 	    private static final String BASE_URL = "http://localhost:8080/rjrestassuredflowsimple"; // Update with your actual base URL
 	    private static final String BASE_PATH = "/employees";
 
@@ -30,33 +30,33 @@ public class UpdateSetup {
 	        );
 
 	        // Check if employee ID 1 exists, else create a new employee
-	        boolean employeeExists = checkIfEmployeeExists(1L);
+	        employeeId  = checkIfEmployeeExists();
 
-	        if (!employeeExists) {
+	        if (employeeId == -1) {
 	            employeeId = createNewEmployeeAndGetId();
 	            System.out.println("Created new employee with ID: " + employeeId);
-	        } else {
-	            employeeId = 1L;
+	        } else {           
 	            System.out.println("Using existing employee ID: " + employeeId);
 	        }
 	    }
 
-	    private boolean checkIfEmployeeExists(Long id) {
-	        Response response = given()
-	        .when()
-	            .get("/" + id) // GET /employees/1
-	        .then()
-	            .extract()
-	            .response();
-	System.out.println("verified if employee exists: "+(response.statusCode() == 200));
-	        return response.statusCode() == 200; // If 200 OK, employee exists
+	    private long checkIfEmployeeExists() {
+	    	Response r = given().queryParam("firstName", "getemp_first2").queryParam("lastName", "getemp_last2").when()
+			.get("/search/name");
+	    int code = r.then().extract().statusCode();
+	    if (code==200) {
+	    	return r.jsonPath().getLong("id");
+	    }
+	    
+	    return -1l;
+ 
 	    }
 
 	    private Long createNewEmployeeAndGetId() {
 	        // New employee data
 	        Map<String, Object> newEmployee = new HashMap<>();
-	        newEmployee.put("firstName", "John");
-	        newEmployee.put("lastName", "Doe");
+	        newEmployee.put("firstName", "updateemp_first2");
+	        newEmployee.put("lastName", "updateemp_last2");
 	        newEmployee.put("department", "IT");
 	        newEmployee.put("city", "San Francisco");
 
