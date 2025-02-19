@@ -47,6 +47,16 @@ public class EmployeeUpdateTest extends UpdateSetup {
 				// .contentType(ContentType.TEXT)
 				.statusCode(200) // Expecting OK status
 				.body(equalTo("Employee updated successfully"));
+	
+		  given()
+	        .contentType(ContentType.JSON)
+	       
+	        .when()
+	        .get("/" + employeeId) // Fetch updated employee
+	        .then()
+	        .statusCode(200)
+	        .body("firstName", equalTo("updateemp_first22"))
+	        .body("lastName", equalTo("updateemp_last22"));	
 	}
 
 	@Test(priority = 3)

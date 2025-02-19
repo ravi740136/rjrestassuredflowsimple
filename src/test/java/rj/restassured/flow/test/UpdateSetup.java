@@ -41,7 +41,7 @@ public class UpdateSetup {
 	    }
 
 	    private long checkIfEmployeeExists() {
-	    	Response r = given().queryParam("firstName", "getemp_first2").queryParam("lastName", "getemp_last2").when()
+	    	Response r = given().queryParam("firstName", "updateemp_first2").queryParam("lastName", "updateemp_last2").when()
 			.get("/search/name");
 	    int code = r.then().extract().statusCode();
 	    if (code==200) {

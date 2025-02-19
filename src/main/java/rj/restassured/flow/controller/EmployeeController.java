@@ -1,5 +1,6 @@
 package rj.restassured.flow.controller;
 
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -7,10 +8,12 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -206,6 +209,96 @@ public class EmployeeController {
             employeeService.deleteEmployee(id);
             return ResponseEntity.ok("Employee deleted successfully");
         }
+        
+        @DeleteMapping("/name/{firstName}/{lastName}")
+        public ResponseEntity<String> deleteEmployeeByName(
+                @PathVariable String firstName,
+                @PathVariable String lastName,
+                @CookieValue(value = "SESSIONID", required = false) String sessionId) {
+
+            if (sessionId == null || sessionId.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session ID is missing"); // 401 Unauthorized
+            }
+
+            // Fetch admin employees and validate session ID
+            Employee adminEmployee = employeeService.getEmployeeByFirstAndLastName("admin", "admin");
+            if (adminEmployee == null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin account not found"); // 403 Forbidden
+            }
+
+            boolean isValidAdmin = sessionId.equals(adminEmployee.getSessionId());
+
+            if (!isValidAdmin) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid session ID or not an admin"); // 403 Forbidden
+            }
+
+            // Fetch the employee to be deleted by firstName and lastName
+            Employee existingEmployee = employeeService.getEmployeeByFirstAndLastName(firstName, lastName);
+            if (existingEmployee == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee not found"); // 404 Not Found
+            }
+
+            // Delete employee
+            employeeService.deleteEmployee(existingEmployee.getId());
+
+            return ResponseEntity.ok("Employee deleted successfully");
+        }
+
+        @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<String> patchUpdateEmployee(
+                @PathVariable Long id,
+                @RequestBody Map<String, Object> updates,
+                @CookieValue(value = "SESSIONID", required = false) String sessionId) {
+
+            if (sessionId == null || sessionId.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session ID is missing"); // 401 Unauthorized
+            }
+
+            // Fetch admin employees and validate session ID
+            Employee adminEmployee = employeeService.getEmployeeByFirstAndLastName("admin", "admin");
+            if (adminEmployee == null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin account not found"); // 403 Forbidden
+            }
+
+            boolean isValidAdmin = sessionId.equals(adminEmployee.getSessionId());
+            if (!isValidAdmin) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid session ID or not an admin"); // 403 Forbidden
+            }
+
+            // Fetch the employee to be updated
+            Employee existingEmployee = employeeService.getEmployeeById(id);
+            if (existingEmployee == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee not found"); // 404 Not Found
+            }
+
+            // Apply the partial updates
+            updates.forEach((key, value) -> {
+                switch (key) {
+                    case "firstName":
+                        existingEmployee.setFirstName((String) value);
+                        break;
+                    case "lastName":
+                        existingEmployee.setLastName((String) value);
+                        break;
+                    case "department":
+                        existingEmployee.setDepartment((String) value);
+                        break;
+                    case "city":
+                        existingEmployee.setCity((String) value);
+                        break;
+                }
+            });
+
+            // Save the updated employee
+            try {
+                employeeService.updateEmployee(existingEmployee);
+            } catch (Exception ex) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected server error occurred"); // 500 Internal Server Error
+            }
+
+            return ResponseEntity.ok("Employee updated successfully"); // 200 OK
+        }
+
 
         @DeleteMapping
         public ResponseEntity<String> deleteAllEmployees() {

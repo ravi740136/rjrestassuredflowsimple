@@ -69,4 +69,76 @@ public class EmployeeDeleteTest extends UpdateSetup{
         .then()
         .statusCode(401);
     }
+    
+    @Test(priority = 2)
+    public void deleteEmployeeWithInvalidSessionId() {
+        // Perform DELETE request with an invalid session ID
+        given().contentType(ContentType.JSON)
+               .cookie("SESSIONID", "invalid-session-id")
+               .when().delete("/" + employeeId)
+               .then().statusCode(403) // Forbidden
+               .body(equalTo("Invalid session ID or not an admin"));
+    }
+    
+    @Test(priority = 4, dependsOnMethods = "loginAndGetSession")
+    public void deleteEmployeeThatDoesNotExist() {
+        // Perform DELETE request for non-existing employee
+        given().contentType(ContentType.JSON)
+               .cookie("SESSIONID", sessionId)
+               .when().delete("/9999") // Assuming 9999 is an invalid employee ID
+               .then().statusCode(404) // Not Found
+               .body(equalTo("Employee not found"));
+    }
+    
+    @Test(priority = 5, dependsOnMethods = "loginAndGetSession")
+    public void deleteAdminByFirstAndLastNameSuccessfully() {
+        // Perform DELETE request for existing employee
+        given().contentType(ContentType.JSON)
+               .cookie("SESSIONID", sessionId)
+               .when().delete("/name/admin/admin") // Assuming "John Doe" exists
+               .then().statusCode(200) // OK
+               .body(equalTo("Employee deleted successfully"));
+    }
+    
+    @Test(priority = 6, dependsOnMethods = "deleteAdminByFirstAndLastNameSuccessfully")
+    public void deleteEmployeeByFirstAndLastNameWhenAdminAccountNotFound() {
+        // Simulate admin account not being found
+        given().contentType(ContentType.JSON)
+               .cookie("SESSIONID", sessionId)
+               .when().delete("/name/John/Doe")
+               .then().statusCode(403) // Forbidden
+               .body(equalTo("Admin account not found"));
+        
+        String requestBody = "{\n" +
+                "  \"firstName\": \"admin\",\n" +
+                "  \"lastName\": \"admin\",\n" +
+                "  \"city\": \"New York\",\n" +  // Added city field
+                "  \"department\": \"IT\"\n" + 
+                "}";
+
+        given()
+        .accept(ContentType.JSON)
+            .contentType(ContentType.JSON)
+            .body(requestBody)
+        .when()
+            .post("/register")
+        .then()
+            .statusCode(201)
+            .body("firstName", equalTo("admin"))
+            .body("lastName", equalTo("admin"))
+            .body("city", equalTo("New York")) // Assert the city value
+            .body("department", equalTo("IT"));
+    }
+    
+    @Test(priority = 7)
+    public void deleteAllEmployees() {
+        given()
+            .contentType(ContentType.JSON)
+        .when()
+            .delete()
+        .then()
+            .statusCode(200) // OK
+            .body(equalTo("All employees deleted successfully"));
+    }
+
 }
