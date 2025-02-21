@@ -306,5 +306,45 @@ public class EmployeeController {
             employeeService.deleteAllEmployees();
             return ResponseEntity.ok("All employees deleted successfully");
         }
+        
+        @GetMapping(value={"/data","/data/"},  produces = MediaType.APPLICATION_JSON_VALUE)
+        public String getEmployeeData() {
+            return """
+  {
+  "employees": [
+    {
+      "id": 101,
+      "firstName": "John",
+      "lastName": "Doe",
+      "age": 35,
+      "department": "IT",
+      "salary": 75000,
+      "active": true,
+      "email": "john.doe@example.com",
+      "joiningDate": "2023-05-15",
+      "address": {
+        "city": "New York",
+        "zip": "10001"
+      }
+    },
+    {
+      "id": 102,
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "age": 28,
+      "department": "HR",
+      "salary": 50000,
+      "active": false,
+      "email": "jane.smith@example.com",
+      "joiningDate": "2022-08-20",
+      "address": {
+        "city": "Los Angeles",
+        "zip": "90001"
+      }
+    }
+  ]
+}
+                """;
+        }
 
 }
