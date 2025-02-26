@@ -25,6 +25,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletResponse;
 import rj.restassured.flow.entity.Employee;
+import rj.restassured.flow.entity.NeoEmployeeResponse;
 import rj.restassured.flow.exceptions.InvalidEmployeeDataException;
 import rj.restassured.flow.service.EmployeeService;
 
@@ -345,6 +346,16 @@ public class EmployeeController {
   ]
 }
                 """;
+        }
+        
+
+        @PostMapping("/store")
+        public ResponseEntity<NeoEmployeeResponse> storeEmployees(@RequestBody NeoEmployeeResponse neoEmployeeResponse) {
+            // Here, the JSON body is automatically deserialized into the NeoEmployeeResponse object.
+            
+            // You can process the object as needed (e.g., saving to a database)
+            
+            return ResponseEntity.ok(neoEmployeeResponse);  // Returning the received object as a response
         }
 
 }
