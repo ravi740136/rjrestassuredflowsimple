@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -356,6 +357,19 @@ public class EmployeeController {
             // You can process the object as needed (e.g., saving to a database)
             
             return ResponseEntity.ok(neoEmployeeResponse);  // Returning the received object as a response
+        }
+        
+        @PostMapping(value = "/dummy/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<String> createEmployeeDummy(@PathVariable String id,
+        		@RequestParam ("file")MultipartFile filem,
+        		@RequestParam String name,
+                                                     @RequestParam int age,
+                                                     @RequestParam String department) {
+            // Process received data (for example, save to DB)
+            String responseMessage = "Employee created: Name=" + name + ", Age=" + age + ", Department=" + department+", id="+id+
+            		", multipart file = "+filem.getOriginalFilename();
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseMessage);
         }
 
 }
